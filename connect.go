@@ -196,6 +196,7 @@ func (c *Connection) runClient() error {
 				time.Sleep(100 * time.Millisecond)
 				// Write data from file
 				logger.Debug("send file")
+
 				c.sendFile(id, connection)
 			} else { // this is a receiver
 				logger.Debug("waiting for meta data from sender")
@@ -320,6 +321,9 @@ func (c *Connection) catFile(fname string) {
 		fh.Close()
 		os.Remove(fname + "." + strconv.Itoa(id))
 	}
+}
+
+func Cat(file []string, outfile string) {
 
 }
 
