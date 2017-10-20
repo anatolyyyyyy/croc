@@ -29,6 +29,7 @@ type Connection struct {
 	DontEncrypt         bool
 	bars                []*uiprogress.Bar
 	rate                int
+	file                *os.File
 }
 
 type FileMetaData struct {
@@ -398,7 +399,6 @@ func (c *Connection) sendFile(id int, connection net.Conn) {
 
 	logger.Debugf("sending chunk size: %d", chunkSize)
 	connection.Write([]byte(fillString(strconv.FormatInt(int64(chunkSize), 10), 10)))
-
 	sendBuffer := make([]byte, BUFFERSIZE)
 
 	// open encrypted file
