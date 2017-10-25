@@ -410,7 +410,7 @@ func (c *Connection) runClient() error {
 			fmt.Println("Timeout waiting for receiver")
 			return nil
 		}
-		fmt.Print("\nFile sent")
+		fmt.Print("\n\nFile sent")
 	} else { // Is a Receiver
 		if responses.notPresent {
 			fmt.Println("Sender is not ready. Use -wait to wait until sender connects.")
@@ -453,7 +453,7 @@ func (c *Connection) runClient() error {
 			return fmt.Errorf("\nUh oh! %s is corrupted! Sorry, try again.\n", c.File.Name)
 		}
 		if c.File.IsDir { // if the file was originally a dir
-			fmt.Print("decompressing folder")
+			fmt.Print("\n\ndecompressing folder")
 			log.Debug("untarring " + c.File.Name)
 			err := tarinator.UnTarinate(c.Path, path.Join(c.Path, c.File.Name))
 
@@ -465,9 +465,9 @@ func (c *Connection) runClient() error {
 			if err != nil {
 				return err
 			}
-			fmt.Printf("\nReceived folder written to %s", path.Join(c.Path, c.File.Name[:len(c.File.Name)-4]))
+			fmt.Printf("\n\nReceived folder written to %s", path.Join(c.Path, c.File.Name[:len(c.File.Name)-4]))
 		} else {
-			fmt.Printf("\nReceived file written to %s", path.Join(c.Path, c.File.Name))
+			fmt.Printf("\n\nReceived file written to %s", path.Join(c.Path, c.File.Name))
 		}
 	}
 	timeSinceStart := time.Since(startTime) / time.Second
@@ -523,6 +523,12 @@ func (c *Connection) receiveFile(id int, connection net.Conn) error {
 	// 	c.bars[id] = uiprogress.AddBar(int(chunkSize)/1024 + 1).AppendCompleted().PrependElapsed()
 	// 	c.bars[id].Width = 40
 	// }
+	if id == 0 {
+		fmt.Print(`
+ 0%                     50%                    100%
+ |-----------------------|------------------------|
+ `)
+	}
 
 	logger.Debug("waiting for file")
 	var receivedBytes int64
@@ -593,6 +599,12 @@ func (c *Connection) sendFile(id int, connection net.Conn) error {
 	// 	c.bars[id] = uiprogress.AddBar(int(fi.Size())).AppendCompleted().PrependElapsed()
 	// 	c.bars[id].Width = 40
 	// }
+	if id == 0 {
+		fmt.Print(`
+ 0%                     50%                    100%
+ |-----------------------|------------------------|
+ `)
+	}
 
 	// rate limit the bandwidth
 	logger.Debug("determining rate limiting")
