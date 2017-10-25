@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"os"
 	"path"
@@ -518,17 +519,27 @@ func (c *Connection) receiveFile(id int, connection net.Conn) error {
 	}
 	defer newFile.Close()
 
-	if !c.Debug {
-		c.bars[id] = uiprogress.AddBar(int(chunkSize)/1024 + 1).AppendCompleted().PrependElapsed()
-		c.bars[id].Width = 40
-	}
+	// if !c.Debug {
+	// 	c.bars[id] = uiprogress.AddBar(int(chunkSize)/1024 + 1).AppendCompleted().PrependElapsed()
+	// 	c.bars[id].Width = 40
+	// }
 
 	logger.Debug("waiting for file")
 	var receivedBytes int64
 	receivedFirstBytes := false
+	chunkI := 0
+	numChunks := int(chunkSize) / 1024
+	previousPercentage := 0
 	for {
+		chunkI++
 		if !c.Debug {
-			c.bars[id].Incr()
+			percentage := chunkI * 50 / numChunks
+			if percentage > previousPercentage {
+				if math.Mod(float64(percentage), float64(c.NumberOfConnections)) == 0 {
+					fmt.Print(".")
+				}
+			}
+			previousPercentage = percentage
 		}
 		if (chunkSize - receivedBytes) < BUFFERSIZE {
 			logger.Debug("at the end")
@@ -576,12 +587,12 @@ func (c *Connection) sendFile(id int, connection net.Conn) error {
 		return errors.Wrap(err, "Problem sending chunk data: ")
 	}
 
-	// show the progress
-	if !c.Debug {
-		logger.Debug("going to show progress")
-		c.bars[id] = uiprogress.AddBar(int(fi.Size())).AppendCompleted().PrependElapsed()
-		c.bars[id].Width = 40
-	}
+	// // show the progress
+	// if !c.Debug {
+	// 	logger.Debug("going to show progress")
+	// 	c.bars[id] = uiprogress.AddBar(int(fi.Size())).AppendCompleted().PrependElapsed()
+	// 	c.bars[id].Width = 40
+	// }
 
 	// rate limit the bandwidth
 	logger.Debug("determining rate limiting")
@@ -593,13 +604,25 @@ func (c *Connection) sendFile(id int, connection net.Conn) error {
 	// send the file
 	sendBuffer := make([]byte, BUFFERSIZE)
 	totalBytesSent := 0
+	previousPercentage := 0
+	chunkI := 0
 	for range throttle.C {
+		chunkI++
+		if !c.Debug {
+			percentage := chunkI * 50 / (int(fi.Size()) / BUFFERSIZE)
+			if percentage > previousPercentage {
+				if math.Mod(float64(percentage), float64(c.NumberOfConnections)) == 0 {
+					fmt.Print(".")
+				}
+			}
+			previousPercentage = percentage
+		}
 		n, err := file.Read(sendBuffer)
 		connection.Write(sendBuffer)
 		totalBytesSent += n
-		if !c.Debug {
-			c.bars[id].Set(totalBytesSent)
-		}
+		// if !c.Debug {
+		// 	c.bars[id].Set(totalBytesSent)
+		// }
 		if err == io.EOF {
 			//End of file reached, break out of for loop
 			logger.Debug("EOF")
